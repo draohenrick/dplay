@@ -15,27 +15,32 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Formulário web para configuração
+// Página de configuração
 app.get('/config', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
+    res.sendFile(__dirname + '/../public/index.html');
 });
 
+// Recebe dados do formulário
 app.post('/config', async (req, res) => {
     const { fluxo, numerosAtendimento, numerosMonitoramento } = req.body;
 
+    // Salva config
     fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify({
         fluxo,
         numerosAtendimento,
         numerosMonitoramento
     }, null, 2));
 
-    // Se o cliente ainda não estiver inicializado, inicializa agora
+    // Inicializa cliente se ainda não tiver inicializado
     if (!client) {
         client = new Client({ session: sessionData, puppeteer: { headless: true } });
 
         client.on('qr', async qr => {
             const qrImage = await qrcode.toDataURL(qr);
-            res.send(`<h1>Escaneie o QR Code</h1><img src="${qrImage}" />`);
+            res.send(`
+                <h1>Escaneie o QR Code</h1>
+                <img src="${qrImage}" />
+            `);
         });
 
         client.on('authenticated', session => {
@@ -54,6 +59,6 @@ app.post('/config', async (req, res) => {
     }
 });
 
-// --- Servidor ---
-const PORT = process.env.PORT || 3000;
+// Porta dinâmica (para Railway) ou fallback 8080
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
