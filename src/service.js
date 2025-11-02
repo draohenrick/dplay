@@ -1,32 +1,45 @@
-import fs from "fs";
-import { create } from "venom-bot";
+import puppeteer from "puppeteer-core";
+import qrcode from "qrcode-terminal";
 
-export async function startBot(config) {
-  const { atendimento, monitoramento, fluxo } = config;
+let clientBrowser;
+let clientPage;
 
-  const client = await create({
-    session: "session-dplay",
+export async function initClient() {
+  clientBrowser = await puppeteer.launch({
     headless: true,
-    browserArgs: ["--no-sandbox", "--disable-setuid-sandbox"],
-    disableWelcome: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
 
-  client.onMessage(async (msg) => {
-    const flow = fluxo || [];
-    const matched = flow.find(f =>
-      msg.body.toLowerCase().includes(f.palavraChave.toLowerCase())
-    );
+  clientPage = await clientBrowser.newPage();
+  await clientPage.goto("https://web.whatsapp.com");
 
-    if (matched) {
-      await client.sendText(msg.from, matched.resposta);
-    } else {
-      await client.sendText(
-        msg.from,
-        "Olá! Não entendi sua mensagem. Selecione uma das opções abaixo:\n" +
-          flow.map(f => `👉 *${f.palavraChave}*`).join("\n")
-      );
-    }
-  });
+  // Espera QR code aparecer
+  const qrSelector = "canvas[aria-label='Scan me!']";
+  await clientPage.waitForSelector(qrSelector);
 
-  console.log(`🤖 Bot iniciado com sucesso para o número ${atendimento}`);
+  const qrCanvas = await clientPage.$(qrSelector);
+  const qrData = await clientPage.evaluate((canvas) => {
+    return canvas.toDataURL();
+  }, qrCanvas);
+
+  // Mostra QR code no terminal
+  qrcode.generate(qrData, { small: true });
+
+  console.log("QR code gerado! Escaneie no celular.");
+}
+
+export async function sendMessage(number, message) {
+  if (!clientPage) throw new Error("Cliente não inicializado");
+
+  const formattedNumber = number.replace(/\D/g, "");
+  const url = `https://web.whatsapp.com/send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`;
+
+  await clientPage.goto(url);
+  await clientPage.waitForTimeout(3000); // espera carregar
+
+  const sendBtnSelector = "button[data-testid='compose-btn-send']";
+  await clientPage.waitForSelector(sendBtnSelector);
+  await clientPage.click(sendBtnSelector);
+
+  console.log(`Mensagem enviada para ${number}: ${message}`);
 }
