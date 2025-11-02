@@ -1,26 +1,23 @@
-# 1. Escolhe a imagem base Node LTS
-FROM node:20-alpine
+# 1. Escolhe a imagem oficial do Node.js 20 (LTS)
+FROM node:20
 
-# 2. Define diretório de trabalho
+# 2. Define o diretório de trabalho dentro do container
 WORKDIR /usr/src/app
 
-# 3. Copia package.json e yarn.lock primeiro (para cache de dependências)
-COPY package.json yarn.lock ./
+# 3. Copia apenas o package.json primeiro (para cache de dependências)
+COPY package.json ./
 
-# 4. Ativa o Corepack e prepara Yarn v3+
+# 4. Ativa Corepack e prepara Yarn
 RUN corepack enable && corepack prepare yarn@stable --activate
 
-# 5. Instala dependências de produção
-RUN yarn install --immutable --production
+# 5. Instala dependências de produção sem lockfile
+RUN yarn install --production
 
 # 6. Copia todo o restante do projeto
 COPY . .
 
-# 7. Expõe a porta se necessário (opcional, para webhooks ou dashboard)
+# 7. Expõe a porta que seu bot vai usar (ex: 3000)
 EXPOSE 3000
 
-# 8. Define variável de ambiente se precisar (opcional)
-ENV NODE_ENV=production
-
-# 9. Comando para iniciar seu bot
+# 8. Comando para iniciar o bot
 CMD ["node", "index.js"]
