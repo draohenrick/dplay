@@ -1,23 +1,24 @@
 # 1. Imagem base
 FROM node:20
 
-# 2. Define o diretório de trabalho
+# 2. Diretório de trabalho
 WORKDIR /usr/src/app
 
-# 3. Copia package.json e yarn.lock para aproveitar cache do Docker
-COPY package.json yarn.lock ./
+# 3. Copia apenas package.json (yarn.lock opcional)
+COPY package.json ./
 
-# 4. Ativa Corepack e prepara Yarn v4
+# 4. Ativa Corepack e prepara Yarn 4
 RUN corepack enable && corepack prepare yarn@stable --activate
 
-# 5. Instala dependências de produção usando Yarn 4
-RUN yarn install --immutable --immutable-cache --check-cache --inline-builds
+# 5. Instala dependências
+# Se yarn.lock existir, ele será usado; se não, será gerado
+RUN yarn install --immutable || yarn install
 
-# 6. Copia o restante do projeto
+# 6. Copia todo o restante do projeto
 COPY . .
 
-# 7. Expõe porta (ajuste conforme necessário)
+# 7. Expõe a porta da aplicação (ajuste conforme sua app)
 EXPOSE 3000
 
-# 8. Comando de start (ajuste conforme seu package.json)
+# 8. Comando para iniciar o bot
 CMD ["node", "index.js"]
