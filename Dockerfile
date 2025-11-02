@@ -1,18 +1,18 @@
-# Usar imagem Node.js completa (não alpine)
+# Imagem Node oficial
 FROM node:20-bullseye
 
 # Diretório de trabalho
 WORKDIR /usr/src/app
 
-# Copia package.json e package-lock.json se houver
+# Copia package.json (e package-lock.json se existir)
 COPY package*.json ./
 
-# Remove node_modules caso existam
+# Limpa node_modules e cache
 RUN rm -rf node_modules
-
-# Limpa cache npm e instala pacotes forçando download limpo
 RUN npm cache clean --force
-RUN npm install --omit=dev --force --no-audit --prefer-offline --no-fund --no-package-lock
+
+# Instala dependências forçando download limpo
+RUN npm install --omit=dev --force --no-audit --no-fund
 
 # Copia o restante do projeto
 COPY ./src ./src
@@ -20,5 +20,5 @@ COPY ./src ./src
 # Expõe porta do Express
 EXPOSE 3000
 
-# Comando para iniciar o bot
+# Start
 CMD ["npm", "start"]
