@@ -1,32 +1,21 @@
-FROM node:20
+# Usa imagem oficial Node.js
+FROM node:20-alpine
 
+# Define diretório de trabalho
 WORKDIR /usr/src/app
 
-# Dependências do sistema para Puppeteer
-RUN apt-get update && apt-get install -y \
-    wget gnupg ca-certificates fonts-liberation libnss3 libatk1.0-0 \
-    libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxrandr2 \
-    libasound2 libgbm1 libgtk-3-0 chromium \
-    && rm -rf /var/lib/apt/lists/*
+# Copia package.json e package-lock.json para instalar dependências
+COPY package.json package-lock.json ./
 
-# Atualiza npm
-RUN npm install -g npm@11
-
-# Copia package.json e package-lock.json
-COPY package*.json ./
-
-# Limpa cache e força instalação limpa sem confiar em integridade
+# Limpa cache e instala dependências de forma confiável
 RUN npm cache clean --force
-RUN npm ci --omit=dev --legacy-peer-deps --force --prefer-offline
+RUN npm ci --omit=dev --legacy-peer-deps --force
 
 # Copia o restante do projeto
-COPY . .
+COPY ./src ./src
 
-# Variável para Puppeteer
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+# Expõe a porta (opcional, se usar express)
+EXPOSE 3000
 
-# Porta
-EXPOSE 8080
-
-# Start
-CMD ["node", "src/index.js"]
+# Comando para iniciar o bot
+CMD ["npm", "start"]
