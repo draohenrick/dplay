@@ -12,12 +12,12 @@ RUN apt-get update && apt-get install -y \
 # Atualiza npm
 RUN npm install -g npm@11
 
-# Copia package.json e package-lock.json limpos
+# Copia package.json e package-lock.json
 COPY package*.json ./
 
-# Limpa cache e instala dependências
+# Limpa cache do npm e força instalação ignorando integridade
 RUN npm cache clean --force
-RUN npm install --omit=dev --legacy-peer-deps --prefer-offline
+RUN npm install --omit=dev --legacy-peer-deps --force
 
 # Copia o restante do projeto
 COPY . .
