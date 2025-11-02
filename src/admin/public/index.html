@@ -1,11 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard WhatsApp Dplay</title>
+<meta charset="UTF-8">
+<title>Configurar Bot WhatsApp</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+textarea { width: 100%; }
+input[type=text] { width: 100%; padding: 5px; margin-bottom: 10px; }
+button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+</style>
 </head>
 <body>
-  <div id="root"></div>
+<h1>Configuração do Bot WhatsApp</h1>
+<form method="POST" action="/config">
+  <label>Fluxo de Atendimento (JSON):</label><br>
+  <textarea name="fluxo" rows="10" placeholder='Ex: {"1": "Mensagem de boas-vindas"}'></textarea><br>
+
+  <label>Números de Atendimento (separados por vírgula):</label><br>
+  <input type="text" name="numerosAtendimento" placeholder="+5511999999999,+5511888888888"><br>
+
+  <label>Números de Monitoramento (separados por vírgula):</label><br>
+  <input type="text" name="numerosMonitoramento" placeholder="+5511777777777"><br>
+
+  <button type="submit">Salvar e Inicializar Bot</button>
+</form>
 </body>
 </html>
