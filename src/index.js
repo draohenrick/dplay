@@ -1,107 +1,102 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const qrcode = require('qrcode');
-const bodyParser = require('body-parser');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+import express from "express";
+import { Client, LocalAuth } from "whatsapp-web.js";
+import qrcode from "qrcode-terminal";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-const CONFIG_FILE_PATH = path.join(__dirname, '../config.json');
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "../public")));
 
-let client = null;
-let lastQR = null;
+const CONFIG_PATH = path.join(__dirname, "../config.json");
 
-// Configuração do Express
-app.use(express.static(path.join(__dirname, '../public')));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Rota da página de configuração
-app.get('/config', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-// Rota para receber os dados e iniciar o bot
-app.post('/config', (req, res) => {
-  const { fluxo, numerosAtendimento, numerosMonitoramento } = req.body;
-
-  const configData = { fluxo, numerosAtendimento, numerosMonitoramento };
-  fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(configData, null, 2));
-
-  res.send(`
-    <h1>✅ Configurações salvas!</h1>
-    <p>O bot está iniciando em background...</p>
-    <p>Quando o QR estiver pronto, acesse <a href="/qr">/qr</a> para escanear.</p>
-  `);
-
-  if (!client) {
-    inicializarBot();
-  }
-});
-
-// Rota para exibir o QR Code atual
-app.get('/qr', async (req, res) => {
-  if (!lastQR) {
-    return res.send('<h1>QR Code ainda não gerado. Aguarde alguns segundos e atualize.</h1>');
-  }
-
-  const qrImage = await qrcode.toDataURL(lastQR);
-  res.send(`
-    <h1>📱 Escaneie o QR Code abaixo para conectar seu WhatsApp</h1>
-    <img src="${qrImage}" style="width:300px; height:300px;"/>
-  `);
-});
-
-// Função para inicializar o bot
-function inicializarBot() {
-  console.log('Inicializando bot WhatsApp...');
-
-  client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: {
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
-      ]
-    }
-  });
-
-  client.on('qr', qr => {
-    lastQR = qr;
-    console.log('QR Code gerado!');
-  });
-
-  client.on('ready', () => {
-    console.log('🤖 Bot conectado e pronto!');
-  });
-
-  client.on('authenticated', () => {
-    console.log('✅ Sessão autenticada com sucesso.');
-  });
-
-  client.on('auth_failure', msg => {
-    console.error('❌ Falha de autenticação:', msg);
-  });
-
-  client.on('disconnected', () => {
-    console.log('⚠ Bot desconectado. Reiniciando...');
-    client = null;
-    inicializarBot();
-  });
-
-  client.initialize();
+// 🔹 Cria config.json se não existir
+if (!fs.existsSync(CONFIG_PATH)) {
+  fs.writeFileSync(
+    CONFIG_PATH,
+    JSON.stringify({
+      fluxo: "Olá! Sou o assistente virtual. Digite 'menu' para ver as opções.",
+      numerosAtendimento: "",
+    }, null, 2)
+  );
 }
 
-// Inicia o servidor Express
+// 🔹 Inicializa o cliente WhatsApp
+const client = new Client({
+  authStrategy: new LocalAuth(),
+  puppeteer: {
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  },
+});
+
+// 🔹 Exibe QR no console e frontend
+client.on("qr", (qr) => {
+  console.log("📱 Escaneie o QR code abaixo:");
+  qrcode.generate(qr, { small: true });
+});
+
+// 🔹 Quando conectar
+client.on("ready", () => {
+  console.log("✅ Cliente conectado com sucesso!");
+});
+
+client.initialize();
+
+// 🔹 Rota principal
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
+
+// 🔹 Salvar configurações
+app.post("/config", (req, res) => {
+  const { fluxo, numerosAtendimento } = req.body;
+
+  fs.writeFileSync(
+    CONFIG_PATH,
+    JSON.stringify({ fluxo, numerosAtendimento }, null, 2)
+  );
+
+  console.log("⚙️ Configurações salvas:", { fluxo, numerosAtendimento });
+  res.send(`<h2>✅ Configurações salvas com sucesso!</h2>
+            <a href="/">⬅ Voltar</a>`);
+});
+
+// 🔹 Evento de mensagens
+client.on("message", async (msg) => {
+  try {
+    console.log("📩 Mensagem recebida:", msg.body);
+
+    // Ignora mensagens antigas
+    if (msg.timestamp * 1000 < Date.now() - 60000) return;
+
+    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+    const fluxo = config.fluxo || "";
+    const numerosAtendimento = config.numerosAtendimento
+      ? config.numerosAtendimento.split(",").map((n) => n.trim())
+      : [];
+
+    // Lógica básica
+    if (msg.body.toLowerCase().includes("oi")) {
+      await msg.reply("👋 Olá! Sou o assistente virtual. Digite 'menu' para ver as opções.");
+    } else if (msg.body.toLowerCase().includes("menu")) {
+      await msg.reply(`📋 Opções disponíveis:\n${fluxo}`);
+    } else if (numerosAtendimento.includes(msg.from.replace("@c.us", ""))) {
+      await msg.reply("🔧 Você é um número de atendimento autorizado.");
+    } else {
+      await msg.reply("🤖 Recebemos sua mensagem. Em breve alguém entrará em contato.");
+    }
+  } catch (error) {
+    console.error("❌ Erro ao processar mensagem:", error);
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
