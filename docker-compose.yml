@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URI=mongodb://mongo:27017/whatsapp-bot
+      - WHATSAPP_CLOUD_TOKEN=mocktoken
+      - WHATSAPP_PHONE_NUMBER_ID=123456
+      - ADMIN_TOKEN=admin123
+    depends_on:
+      - redis
+      - mongo
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"

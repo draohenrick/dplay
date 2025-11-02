@@ -1,0 +1,15 @@
+{
+  "start":"welcome",
+  "nodes":{
+    "welcome":{
+      "type":"message",
+      "text":"Olá! Escolha uma opção:",
+      "buttons":["Suporte","Vendas","Informações"],
+      "transitions":{"suporte":"suporte","vendas":"vendas","informações":"info","default":"fallback"}
+    },
+    "suporte":{"type":"message","text":"Você escolheu Suporte.","transitions":{"default":"welcome"}},
+    "vendas":{"type":"message","text":"Você escolheu Vendas.","transitions":{"default":"welcome"}},
+    "info":{"type":"message","text":"Informações gerais.","transitions":{"default":"welcome"}},
+    "fallback":{"type":"message","text":"Não entendi.","transitions":{"default":"welcome"}}
+  }
+}
