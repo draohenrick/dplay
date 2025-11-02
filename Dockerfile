@@ -15,9 +15,9 @@ RUN npm install -g npm@11
 # Copia package.json e package-lock.json
 COPY package*.json ./
 
-# Limpa cache do npm e força instalação ignorando integridade
+# Limpa cache e força instalação limpa sem confiar em integridade
 RUN npm cache clean --force
-RUN npm install --omit=dev --legacy-peer-deps --force
+RUN npm ci --omit=dev --legacy-peer-deps --force --prefer-offline
 
 # Copia o restante do projeto
 COPY . .
