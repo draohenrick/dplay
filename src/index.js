@@ -1,75 +1,59 @@
-require('dotenv').config();
-const wppconnect = require('@wppconnect-team/wppconnect');
-const { handleMessage } = require('./flow');
-const { connectRedis, getSession, setSession } = require('./services/sessionStore');
-const logger = require('./utils/logger') || console;
+const express = require('express');
+const fs = require('fs');
+const { Client } = require('whatsapp-web.js');
+const qrcode = require('qrcode');
+const bodyParser = require('body-parser');
 
-(async () => {
-  try {
-    // Conectar Redis se disponível
-    if (process.env.REDIS_URL) {
-      await connectRedis(process.env.REDIS_URL);
-      logger.info && logger.info('Redis conectado');
+const SESSION_FILE_PATH = './session.json';
+const CONFIG_FILE_PATH = './config.json';
+
+let sessionData = fs.existsSync(SESSION_FILE_PATH) ? require(SESSION_FILE_PATH) : null;
+let client;
+
+// --- Express ---
+const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public'));
+
+// Formulário web para configuração
+app.get('/config', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
+
+app.post('/config', async (req, res) => {
+    const { fluxo, numerosAtendimento, numerosMonitoramento } = req.body;
+
+    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify({
+        fluxo,
+        numerosAtendimento,
+        numerosMonitoramento
+    }, null, 2));
+
+    // Se o cliente ainda não estiver inicializado, inicializa agora
+    if (!client) {
+        client = new Client({ session: sessionData, puppeteer: { headless: true } });
+
+        client.on('qr', async qr => {
+            const qrImage = await qrcode.toDataURL(qr);
+            res.send(`<h1>Escaneie o QR Code</h1><img src="${qrImage}" />`);
+        });
+
+        client.on('authenticated', session => {
+            fs.writeFileSync(SESSION_FILE_PATH, JSON.stringify(session));
+            console.log('Bot autenticado e sessão salva!');
+        });
+
+        client.on('ready', () => {
+            console.log('Bot pronto!');
+            if (!res.headersSent) res.send('<h1>Bot pronto! Sessão existente usada.</h1>');
+        });
+
+        client.initialize();
+    } else {
+        res.send('<h1>Configurações salvas! Bot já está rodando.</h1>');
     }
+});
 
-    const sessionKey = process.env.SESSION_KEY || 'dplay-bot-session';
-    let initialSession = null;
-    try { initialSession = await getSession(sessionKey); } catch(e) { /* sem session */ }
-
-    const client = await wppconnect.create({
-      session: initialSession || (process.env.SESSION_NAME || 'dplay-bot'),
-      puppeteerOptions: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      }
-    });
-
-    logger.info && logger.info('🤖 Bot conectado ao WhatsApp!');
-
-    // tenta salvar sessão ao iniciar
-    try {
-      const sessionData = await client.getSession?.() || null;
-      if (sessionData) await setSession(sessionKey, sessionData);
-    } catch (e) {
-      logger.warn && logger.warn('Não foi possível salvar sessionData automaticamente', e.message);
-    }
-
-    // timestamp de início para evitar reagir a mensagens pré-existentes
-    const startTime = Math.floor(Date.now() / 1000);
-
-    client.onMessage(async (message) => {
-      try {
-        const msgTs = message.timestamp || message.t || 0;
-
-        if (msgTs && msgTs < startTime) {
-          logger.info && logger.info('Ignorando mensagem antiga', { id: message.id, ts: msgTs });
-          return;
-        }
-
-        if (message.isStatus || (message.from && message.from.includes('status@broadcast'))) {
-          return;
-        }
-
-        if (message.fromMe) return; // evita loops respondendo a si próprio
-
-        await handleMessage(client, message);
-      } catch (err) {
-        logger.error && logger.error('Erro no processamento de mensagem', err);
-      }
-    });
-
-    // salvar session quando houver mudança de estado (opcional)
-    if (client.onStateChange) {
-      client.onStateChange(async (state) => {
-        logger.info && logger.info('Estado do client:', state);
-        try {
-          const sessionData = await client.getSession?.();
-          if (sessionData) await setSession(sessionKey, sessionData);
-        } catch (e) {}
-      });
-    }
-
-  } catch (err) {
-    console.error('Erro ao iniciar bot:', err);
-  }
-})();
+// --- Servidor ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
