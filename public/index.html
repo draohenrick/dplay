@@ -1,28 +1,108 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DPlayBot Flow Builder</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DPlay Bot Config</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #141E30, #243B55);
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 { margin: 20px 0; }
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 25px;
+      width: 90%;
+      max-width: 700px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      background: #00bfa5;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      font-size: 16px;
+      margin-top: 10px;
+      transition: 0.3s;
+    }
+    button:hover { background: #009e8a; }
+    .flow-item {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+  </style>
 </head>
 <body>
-  <div class="app">
-    <div class="editor">
-      <h1>🤖 Criador de Fluxo DPlayBot</h1>
-      <div id="fluxoContainer"></div>
-      <button id="addEtapa">➕ Nova Etapa</button>
-      <button id="salvarFluxo" class="salvar">💾 Salvar Fluxo</button>
-      <p id="mensagem"></p>
-    </div>
+  <h1>⚙️ Configuração do DPlay Bot</h1>
+  <div class="card">
+    <label>Número de Atendimento:</label>
+    <input type="text" id="atendimento" placeholder="Ex: 5599999999999" />
 
-    <div class="preview">
-      <h2>📱 Pré-visualização do Chat</h2>
-      <div id="chatPreview" class="chat"></div>
-      <button id="simularFluxo" class="simular">▶️ Simular</button>
-    </div>
+    <label>Número de Monitoramento:</label>
+    <input type="text" id="monitoramento" placeholder="Ex: 5588999999999" />
+
+    <h3>Fluxo de Conversa:</h3>
+    <div id="flow-container"></div>
+    <button onclick="addFlow()">➕ Adicionar Etapa</button>
+
+    <button onclick="saveConfig()">💾 Salvar e Iniciar Bot</button>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    let flows = [];
+
+    function addFlow() {
+      const div = document.createElement("div");
+      div.classList.add("flow-item");
+      div.innerHTML = `
+        <input placeholder="Palavra-chave" class="key" />
+        <textarea placeholder="Resposta"></textarea>
+      `;
+      document.getElementById("flow-container").appendChild(div);
+    }
+
+    async function saveConfig() {
+      const atendimento = document.getElementById("atendimento").value;
+      const monitoramento = document.getElementById("monitoramento").value;
+
+      const nodes = document.querySelectorAll(".flow-item");
+      flows = [];
+      nodes.forEach((el) => {
+        const palavraChave = el.querySelector(".key").value;
+        const resposta = el.querySelector("textarea").value;
+        if (palavraChave && resposta) flows.push({ palavraChave, resposta });
+      });
+
+      const res = await fetch("/save-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ atendimento, monitoramento, fluxo: flows }),
+      });
+
+      const data = await res.json();
+      alert(data.message || "Configuração salva!");
+    }
+  </script>
 </body>
 </html>
