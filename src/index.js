@@ -1,5 +1,6 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const { Client } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const bodyParser = require('body-parser');
@@ -13,11 +14,13 @@ let client;
 // --- Express ---
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
+
+// Servir arquivos estáticos do public
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Página de configuração
 app.get('/config', (req, res) => {
-    res.sendFile(__dirname + '/../public/index.html');
+    res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Recebe dados do formulário
