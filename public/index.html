@@ -1,107 +1,125 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DPlay Bot Config</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DPlay WhatsApp Bot</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      font-family: "Poppins", sans-serif;
-      background: linear-gradient(135deg, #141E30, #243B55);
-      color: white;
-      margin: 0;
-      padding: 0;
+      background: linear-gradient(to right, #1c1c1c, #282828);
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
+      justify-content: flex-start;
+      padding: 20px;
     }
-    h1 { margin: 20px 0; }
-    .card {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 15px;
-      padding: 25px;
-      width: 90%;
+    .container {
       max-width: 700px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    }
-    input, textarea {
       width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
+      background-color: #222;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
     }
-    button {
-      background: #00bfa5;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      color: white;
-      font-size: 16px;
-      margin-top: 10px;
-      transition: 0.3s;
-    }
-    button:hover { background: #009e8a; }
-    .flow-item {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 10px;
-      border-radius: 8px;
-      margin: 10px 0;
-    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .flow-step { margin-bottom: 15px; }
+    #qrCode { text-align: center; margin-bottom: 20px; }
+    button { width: 100%; }
+    .btn-add-step { margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>⚙️ Configuração do DPlay Bot</h1>
-  <div class="card">
-    <label>Número de Atendimento:</label>
-    <input type="text" id="atendimento" placeholder="Ex: 5599999999999" />
+  <div class="container">
+    <h1>DPlay WhatsApp Bot</h1>
 
-    <label>Número de Monitoramento:</label>
-    <input type="text" id="monitoramento" placeholder="Ex: 5588999999999" />
+    <!-- QR Code -->
+    <div id="qrCode">
+      <button class="btn btn-warning" onclick="startBot()">Gerar QR Code</button>
+      <p id="qrStatus"></p>
+      <img id="qrImg" src="" alt="" style="max-width: 250px; margin-top: 10px; display: none;">
+    </div>
 
-    <h3>Fluxo de Conversa:</h3>
-    <div id="flow-container"></div>
-    <button onclick="addFlow()">➕ Adicionar Etapa</button>
+    <!-- Fluxo de atendimento -->
+    <h4>Fluxo de atendimento</h4>
+    <div id="flowContainer"></div>
+    <button class="btn btn-success btn-add-step" onclick="addStep()">Adicionar etapa</button>
 
-    <button onclick="saveConfig()">💾 Salvar e Iniciar Bot</button>
+    <button class="btn btn-primary mt-3" onclick="saveFlow()">Salvar Fluxo</button>
+
+    <!-- Envio manual -->
+    <h4 class="mt-4">Enviar mensagem manual</h4>
+    <input class="form-control mb-2" id="numberInput" placeholder="Número (ex: 5511999999999)">
+    <textarea class="form-control mb-2" id="messageInput" placeholder="Mensagem"></textarea>
+    <button class="btn btn-info" onclick="sendMessageManual()">Enviar</button>
+    <p id="sendStatus"></p>
   </div>
 
   <script>
-    let flows = [];
+    let flow = [];
 
-    function addFlow() {
-      const div = document.createElement("div");
-      div.classList.add("flow-item");
-      div.innerHTML = `
-        <input placeholder="Palavra-chave" class="key" />
-        <textarea placeholder="Resposta"></textarea>
-      `;
-      document.getElementById("flow-container").appendChild(div);
+    function startBot() {
+      fetch('/start')
+        .then(res => res.text())
+        .then(msg => {
+          document.getElementById('qrStatus').innerText = msg;
+          // Aqui você pode criar uma rota /qr no backend para exibir QR code como imagem
+        })
+        .catch(err => console.error(err));
     }
 
-    async function saveConfig() {
-      const atendimento = document.getElementById("atendimento").value;
-      const monitoramento = document.getElementById("monitoramento").value;
+    function addStep() {
+      const stepIndex = flow.length;
+      flow.push({ message: '', response: '' });
 
-      const nodes = document.querySelectorAll(".flow-item");
-      flows = [];
-      nodes.forEach((el) => {
-        const palavraChave = el.querySelector(".key").value;
-        const resposta = el.querySelector("textarea").value;
-        if (palavraChave && resposta) flows.push({ palavraChave, resposta });
+      const stepDiv = document.createElement('div');
+      stepDiv.classList.add('flow-step', 'p-2', 'border', 'border-secondary', 'rounded');
+      stepDiv.id = `step-${stepIndex}`;
+      stepDiv.innerHTML = `
+        <label>Mensagem do bot:</label>
+        <input class="form-control mb-1" oninput="updateStep(${stepIndex}, 'message', this.value)">
+        <label>Resposta do usuário:</label>
+        <input class="form-control" oninput="updateStep(${stepIndex}, 'response', this.value)">
+      `;
+
+      document.getElementById('flowContainer').appendChild(stepDiv);
+    }
+
+    function updateStep(index, field, value) {
+      flow[index][field] = value;
+    }
+
+    function saveFlow() {
+      fetch('/save-flow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flow })
+      })
+      .then(res => res.text())
+      .then(msg => alert(msg))
+      .catch(err => console.error(err));
+    }
+
+    function sendMessageManual() {
+      const number = document.getElementById('numberInput').value;
+      const message = document.getElementById('messageInput').value;
+
+      fetch('/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number, message })
+      })
+      .then(res => res.text())
+      .then(msg => {
+        document.getElementById('sendStatus').innerText = msg;
+      })
+      .catch(err => {
+        document.getElementById('sendStatus').innerText = 'Erro ao enviar mensagem';
+        console.error(err);
       });
-
-      const res = await fetch("/save-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ atendimento, monitoramento, fluxo: flows }),
-      });
-
-      const data = await res.json();
-      alert(data.message || "Configuração salva!");
     }
   </script>
 </body>
