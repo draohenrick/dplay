@@ -1,23 +1,23 @@
-# 1. Escolhe a imagem oficial do Node.js 20 (LTS)
+# 1. Imagem Node.js 20
 FROM node:20
 
-# 2. Define o diretório de trabalho dentro do container
+# 2. Define diretório de trabalho
 WORKDIR /usr/src/app
 
-# 3. Copia apenas o package.json primeiro (para cache de dependências)
-COPY package.json ./
+# 3. Copia package.json e yarn.lock (se existir)
+COPY package.json yarn.lock* ./
 
 # 4. Ativa Corepack e prepara Yarn
 RUN corepack enable && corepack prepare yarn@stable --activate
 
-# 5. Instala dependências de produção sem lockfile
-RUN yarn install --production
+# 5. Instala dependências de produção
+RUN yarn install --immutable --immutable-cache --check-cache --inline-builds
 
-# 6. Copia todo o restante do projeto
+# 6. Copia o restante do projeto
 COPY . .
 
-# 7. Expõe a porta que seu bot vai usar (ex: 3000)
+# 7. Expõe porta do bot
 EXPOSE 3000
 
-# 8. Comando para iniciar o bot
+# 8. Comando para rodar o bot
 CMD ["node", "index.js"]
