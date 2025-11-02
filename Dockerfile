@@ -1,36 +1,35 @@
-# Usa Node 20
 FROM node:20
 
-# Define o diretório de trabalho
 WORKDIR /usr/src/app
 
-# Instala dependências do sistema para Puppeteer / Chromium
+# Instala dependências do sistema para Puppeteer/Chromium
 RUN apt-get update && apt-get install -y \
     wget gnupg ca-certificates fonts-liberation libnss3 libatk1.0-0 \
     libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxrandr2 \
     libasound2 libgbm1 libgtk-3-0 chromium \
     && rm -rf /var/lib/apt/lists/*
 
-# Atualiza npm para evitar problemas
+# Atualiza npm
 RUN npm install -g npm@11
 
-# Limpa cache do npm antes de instalar
-RUN npm cache clean --force
-
-# Copia arquivos de package primeiro para aproveitar cache
+# Copia package.json e package-lock.json
 COPY package*.json ./
 
-# Instala pacotes (somente produção)
-RUN npm install --omit=dev --force
+# Limpa cache do npm
+RUN npm cache clean --force
+
+# Define registro confiável e instala dependências
+RUN npm set registry https://registry.npmjs.org/ \
+    && npm install --omit=dev --legacy-peer-deps --prefer-offline
 
 # Copia o restante do projeto
 COPY . .
 
-# Variável de ambiente para Puppeteer usar o Chromium instalado
+# Define variável do Puppeteer
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Expõe porta do servidor
+# Expõe a porta
 EXPOSE 8080
 
-# Comando para iniciar o bot
+# Inicia o bot
 CMD ["node", "src/index.js"]
