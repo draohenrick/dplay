@@ -1,15 +1,15 @@
-# Imagem oficial Node.js
-FROM node:20-alpine
+# Imagem Node.js mais completa
+FROM node:20-bullseye
 
-# Define diretório de trabalho
+# Diretório de trabalho
 WORKDIR /usr/src/app
 
-# Copia package.json e package-lock.json (se houver)
+# Copia package.json (e package-lock.json se tiver)
 COPY package*.json ./
 
-# Limpa cache npm e instala dependências
+# Limpa cache npm e instala dependências de forma limpa
 RUN npm cache clean --force
-RUN npm install --omit=dev --legacy-peer-deps --force
+RUN npm install --omit=dev --prefer-offline --no-audit
 
 # Copia o restante do projeto
 COPY ./src ./src
