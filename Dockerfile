@@ -1,23 +1,26 @@
-# Dockerfile para Bot WhatsApp com Venom-Bot (Railway)
-
-# 1. Imagem base Node
+# 1. Escolhe a imagem base Node LTS
 FROM node:20-alpine
 
-# 2. Diretório de trabalho
+# 2. Define diretório de trabalho
 WORKDIR /usr/src/app
 
-# 3. Copia package.json e yarn.lock (se tiver) para instalar dependências primeiro
-COPY package.json yarn.lock* ./
+# 3. Copia package.json e yarn.lock primeiro (para cache de dependências)
+COPY package.json yarn.lock ./
 
-# 4. Instala yarn e dependências (produção)
+# 4. Ativa o Corepack e prepara Yarn v3+
 RUN corepack enable && corepack prepare yarn@stable --activate
-RUN yarn install --production --frozen-lockfile --network-concurrency 1
 
-# 5. Copia todo o restante do projeto
+# 5. Instala dependências de produção
+RUN yarn install --immutable --production
+
+# 6. Copia todo o restante do projeto
 COPY . .
 
-# 6. Expõe a porta (se necessário)
+# 7. Expõe a porta se necessário (opcional, para webhooks ou dashboard)
 EXPOSE 3000
 
-# 7. Comando para rodar o bot
+# 8. Define variável de ambiente se precisar (opcional)
+ENV NODE_ENV=production
+
+# 9. Comando para iniciar seu bot
 CMD ["node", "index.js"]
