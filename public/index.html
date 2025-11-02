@@ -1,24 +1,29 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DPlay WhatsApp Bot</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DPlay Bot - Painel de Configuração</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <h1>⚙️ Configurações do Bot WhatsApp</h1>
+    <h1>⚙️ Configuração do Bot DPlay</h1>
 
-    <form method="POST" action="/config">
-      <label for="fluxo">🧩 Fluxo de atendimento</label>
-      <textarea name="fluxo" id="fluxo" rows="5" placeholder="Ex: Bem-vindo ao atendimento DPlay!"></textarea>
+    <div class="card">
+      <label>💬 Fluxo de Atendimento</label>
+      <textarea id="fluxo" rows="6" placeholder="Ex: 1 - Suporte, 2 - Vendas..."></textarea>
 
-      <label for="numerosAtendimento">📞 Números de atendimento (separados por vírgula)</label>
-      <input type="text" name="numerosAtendimento" id="numerosAtendimento" placeholder="Ex: 5599999999999,5588888888888" />
+      <label>📞 Números de Atendimento (separados por vírgula)</label>
+      <input id="numerosAtendimento" placeholder="Ex: 5599999999999,5588888888888">
 
-      <button type="submit">💾 Salvar Configurações</button>
-    </form>
+      <button id="salvar">💾 Salvar e Atualizar Bot</button>
+    </div>
+
+    <div id="status"></div>
+    <div id="qrArea" class="qr"></div>
   </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
