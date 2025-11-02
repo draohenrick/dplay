@@ -1,30 +1,32 @@
 import express from "express";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { startBot } from "./service.js";
+import { initClient, sendMessage } from "./service.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 8080;
-
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static("public"));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
-});
-
-app.post("/save-config", async (req, res) => {
+app.get("/start", async (req, res) => {
   try {
-    const config = req.body;
-    fs.writeFileSync("./config.json", JSON.stringify(config, null, 2));
-    await startBot(config);
-    res.json({ success: true, message: "Bot iniciado com sucesso!" });
+    await initClient();
+    res.send("QR code gerado! Escaneie no celular.");
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: "Erro ao iniciar o bot." });
+    res.status(500).send("Erro ao iniciar o cliente.");
   }
 });
 
-app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+app.post("/send", async (req, res) => {
+  const { number, message } = req.body;
+  if (!number || !message) return res.status(400).send("Número e mensagem são obrigatórios.");
+
+  try {
+    await sendMessage(number, message);
+    res.send("Mensagem enviada com sucesso!");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro ao enviar mensagem.");
+  }
+});
+
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
