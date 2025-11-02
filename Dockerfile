@@ -12,21 +12,21 @@ RUN apt-get update && apt-get install -y \
 # Atualiza npm
 RUN npm install -g npm@11
 
-# Copia apenas os arquivos de dependência primeiro
+# Copia package.json e package-lock.json limpos
 COPY package*.json ./
 
-# Limpa cache e instala dependências a partir do package-lock.json limpo
+# Limpa cache e instala dependências
 RUN npm cache clean --force
-RUN npm ci --omit=dev --legacy-peer-deps
+RUN npm install --omit=dev --legacy-peer-deps --prefer-offline
 
 # Copia o restante do projeto
 COPY . .
 
-# Variável do Puppeteer
+# Variável para Puppeteer
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Porta
 EXPOSE 8080
 
-# Inicia o servidor
+# Start
 CMD ["node", "src/index.js"]
