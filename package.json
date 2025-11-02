@@ -1,23 +1,27 @@
 {
-  "name": "dplay-bot",
+  "name": "whatsapp-bot",
   "version": "1.0.0",
-  "description": "Bot WhatsApp interativo com fluxo personalizado pelo cliente",
-  "main": "src/index.js",
-  "type": "module",
+  "description": "Bot de atendimento WhatsApp usando Venom-Bot",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "keywords": [
     "whatsapp",
     "bot",
-    "express",
     "venom-bot",
-    "interactive"
+    "messaging"
   ],
-  "author": "DPlay",
-  "license": "MIT",
+  "author": "",
+  "license": "ISC",
   "dependencies": {
+    "venom-bot": "^4.0.0",
     "express": "^4.18.2",
-    "venom-bot": "^4.0.0"
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "qrcode-terminal": "^0.12.0",
+    "uuid": "^9.0.1"
   }
 }
