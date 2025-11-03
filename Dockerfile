@@ -1,24 +1,23 @@
 # 1. Imagem base
 FROM node:20
 
-# 2. Define o diretório de trabalho
+# 2. Diretório de trabalho
 WORKDIR /usr/src/app
 
-# 3. Copia apenas package.json e package-lock.json para aproveitar cache quando possível
+# 3. Copia package.json e package-lock.json
 COPY package.json package-lock.json ./
 
-# 4. Limpa cache npm e força instalação limpa
-RUN npm cache clean --force \
+# 4. Limpa cache npm, usa registry limpo e instala dependências de produção
+RUN npm config set registry https://registry.npmjs.org/ \
+    && rm -rf node_modules \
+    && npm cache clean --force \
     && npm install --omit=dev --legacy-peer-deps --force --no-audit --no-fund
 
-# 5. Copia todo o restante do projeto
+# 5. Copia o restante do projeto
 COPY . .
 
-# 6. Define variável de ambiente
-ENV NODE_ENV=production
-
-# 7. Expõe a porta que o bot vai usar
+# 6. Expõe porta do bot
 EXPOSE 3000
 
-# 8. Comando de inicialização apontando para src/index.js
+# 7. Inicializa o bot
 CMD ["node", "src/index.js"]
