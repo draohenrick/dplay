@@ -1,17 +1,15 @@
-# Usa Node.js com Alpine
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Instala git e outras dependências do sistema
-RUN apk add --no-cache git
+# Instala git e yarn clássico
+RUN apk add --no-cache git curl && npm install -g yarn
 
-# Copia apenas os arquivos de dependências
+# Copia dependências
 COPY package.json yarn.lock ./
 
-# Ativa Corepack e instala dependências (sem lock estrito)
-RUN corepack enable
-RUN yarn install --network-timeout 100000 --check-files || yarn install --network-timeout 100000 --check-files
+# Instala dependências com Yarn 1
+RUN yarn install --network-timeout 100000
 
 # Copia o restante do projeto
 COPY . .
