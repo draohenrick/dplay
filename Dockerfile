@@ -1,21 +1,19 @@
-# 1. Usa imagem Node.js base
+# Usa Node.js com Alpine
 FROM node:18-alpine
 
-# 2. Define o diretório de trabalho
 WORKDIR /app
 
-# 3. Instala Git (necessário para dependências git)
+# Instala git e outras dependências do sistema
 RUN apk add --no-cache git
 
-# 4. Copia os arquivos de configuração
+# Copia apenas os arquivos de dependências
 COPY package.json yarn.lock ./
 
-# 5. Ativa Corepack e instala dependências
+# Ativa Corepack e instala dependências (sem lock estrito)
 RUN corepack enable
-RUN yarn install
+RUN yarn install --network-timeout 100000 --check-files || yarn install --network-timeout 100000 --check-files
 
-# 6. Copia o restante do código
+# Copia o restante do projeto
 COPY . .
 
-# 7. Define o comando padrão
 CMD ["yarn", "start"]
