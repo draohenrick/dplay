@@ -1,21 +1,21 @@
-# 1. Define a imagem base
-FROM node:20-alpine
+# 1. Usa imagem Node.js base
+FROM node:18-alpine
 
-# 2. Cria diretório da aplicação
-WORKDIR /usr/src/app
+# 2. Define o diretório de trabalho
+WORKDIR /app
 
-# 3. Copia arquivos de configuração primeiro
-COPY package.json yarn.lock* ./
+# 3. Instala Git (necessário para dependências git)
+RUN apk add --no-cache git
 
-# 4. Habilita o Corepack (para Yarn 4)
+# 4. Copia os arquivos de configuração
+COPY package.json yarn.lock ./
+
+# 5. Ativa Corepack e instala dependências
 RUN corepack enable
-
-# 5. Instala dependências
 RUN yarn install
 
 # 6. Copia o restante do código
 COPY . .
 
-# 7. Expõe a porta e inicia o app
-EXPOSE 3000
+# 7. Define o comando padrão
 CMD ["yarn", "start"]
